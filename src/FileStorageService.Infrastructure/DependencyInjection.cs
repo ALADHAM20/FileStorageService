@@ -1,4 +1,6 @@
+using FileStorageService.Application.Interfaces;
 using FileStorageService.Infrastructure.DbContext;
+using FileStorageService.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +14,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<FileStorageDbContext>(options =>
             options.UseSqlServer(connectionString));
+
+        services.AddScoped<IStoredFileRepository, StoredFileRepository>();
 
         return services;
     }
