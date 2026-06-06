@@ -1,7 +1,14 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+using FileStorageService.Infrastructure;
+
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("DefaultConnection is not configured.");
+
+builder.Services.AddInfrastructure(connectionString);
 
 var app = builder.Build();
 
