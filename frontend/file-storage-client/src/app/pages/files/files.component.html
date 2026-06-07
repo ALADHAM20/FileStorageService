@@ -1,0 +1,45 @@
+<section class="files-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Stored files</p>
+      <h1>Files</h1>
+    </div>
+
+    <button type="button" (click)="loadFiles()" [disabled]="isLoading">
+      {{ isLoading ? 'Loading...' : 'Refresh' }}
+    </button>
+  </header>
+
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+
+  <div class="table-shell">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Size</th>
+          <th>Tags</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (file of files; track file.id) {
+          <tr>
+            <td>{{ file.originalName }}</td>
+            <td>{{ file.contentType }}</td>
+            <td>{{ file.sizeBytes | number }} bytes</td>
+            <td>{{ file.tags.length ? file.tags.join(', ') : 'None' }}</td>
+            <td>{{ file.createdAtUtc | date: 'medium' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty">No files found.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

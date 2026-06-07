@@ -1,0 +1,30 @@
+<section class="login-page">
+  <div class="login-panel">
+    <p class="eyebrow">Development access</p>
+    <h1>File Storage Service</h1>
+    <p class="intro">Create a mock JWT to test the API as a normal user or admin.</p>
+
+    <form [formGroup]="form" (ngSubmit)="login()" class="login-form">
+      <label>
+        User ID
+        <input type="text" formControlName="userId" autocomplete="off" />
+      </label>
+
+      <label>
+        Role
+        <select formControlName="role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+
+      @if (errorMessage) {
+        <p class="error">{{ errorMessage }}</p>
+      }
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Creating token...' : 'Create token' }}
+      </button>
+    </form>
+  </div>
+</section>

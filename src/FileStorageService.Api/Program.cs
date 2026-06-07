@@ -47,7 +47,21 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("DefaultConnection is not configured.");
 
 var storageRootPath = builder.Configuration["Storage:RootPath"] ?? "_storage";
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?? [];
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendClient", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddInfrastructure(connectionString, storageRootPath);
 
 var app = builder.Build();
@@ -69,6 +83,7 @@ app.UseSerilogRequestLogging(options =>
     };
 });
 app.UseExceptionHandler();
+app.UseCors("FrontendClient");
 app.UseAuthentication();
 app.UseAuthorization();
 

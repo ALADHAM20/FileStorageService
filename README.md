@@ -29,7 +29,7 @@ Backend API foundation is implemented:
 
 - .NET 8 SDK
 - SQL Server
-- Node.js LTS for later Angular phases
+- Node.js 20 LTS recommended for Angular 17
 
 ## Backend Setup
 
@@ -151,6 +151,7 @@ The backend avoids hardcoded operational rules where possible:
 - Query page defaults and limits: `Files:Query`
 - Previewable content types and prefixes: `Files:Preview`
 - JWT issuer, audience, signing key, and mock token lifetime: `Jwt`
+- Angular development origins: `Cors:AllowedOrigins`
 - Serilog logging: `Serilog`
 
 ## Verification
@@ -159,6 +160,35 @@ The backend avoids hardcoded operational rules where possible:
 dotnet build FileStorageService.sln
 dotnet test
 ```
+
+## Frontend Setup
+
+The Angular 17 frontend lives under:
+
+```text
+frontend/file-storage-client
+```
+
+Run the frontend from that folder:
+
+```powershell
+cd frontend/file-storage-client
+npm.cmd start
+```
+
+Open:
+
+```text
+http://127.0.0.1:4200
+```
+
+Build the frontend:
+
+```powershell
+npm.cmd run build
+```
+
+The frontend uses `src/environments/environment.ts` for the backend API base URL.
 
 Manual Swagger checklist:
 

@@ -1,0 +1,87 @@
+.app-header {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ec;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  min-height: 72px;
+  padding: 0 28px;
+}
+
+.brand {
+  align-items: center;
+  color: #172033;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  align-items: center;
+  background: #2563eb;
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 0.85rem;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.nav-links {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.nav-links a {
+  border-radius: 6px;
+  color: #475569;
+  font-weight: 700;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.nav-links a.active,
+.nav-links a:hover {
+  background: #edf4ff;
+  color: #1d4ed8;
+}
+
+.session {
+  align-items: center;
+  color: #64748b;
+  display: inline-flex;
+  font-size: 0.92rem;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.session button {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #172033;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.app-main {
+  min-height: calc(100vh - 72px);
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .session {
+    justify-content: flex-start;
+  }
+}
