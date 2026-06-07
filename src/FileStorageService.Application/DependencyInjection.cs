@@ -9,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<IFileDownloadService, FileDownloadService>();
+        services.AddScoped<IFilePreviewService, FilePreviewService>();
         services.AddScoped<IFileQueryService, FileQueryService>();
         services.AddScoped<IFileUploadService, FileUploadService>();
 

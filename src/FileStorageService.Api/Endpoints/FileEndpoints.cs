@@ -23,6 +23,13 @@ public static class FileEndpoints
             .Produces(StatusCodes.Status206PartialContent)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        app.MapGet("/api/files/{id:guid}/preview", PreviewAsync)
+            .WithName("PreviewFile")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status206PartialContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/files", UploadAsync)
             .WithName("UploadFile")
             .WithOpenApi(operation =>
@@ -36,6 +43,24 @@ public static class FileEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
 
         return app;
+    }
+
+    private static async Task<IResult> PreviewAsync(
+        Guid id,
+        IFilePreviewService filePreviewService,
+        CancellationToken cancellationToken)
+    {
+        var response = await filePreviewService.GetPreviewAsync(id, cancellationToken);
+
+        if (response is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.File(
+            response.Content,
+            response.ContentType,
+            enableRangeProcessing: true);
     }
 
     private static async Task<IResult> DownloadAsync(
