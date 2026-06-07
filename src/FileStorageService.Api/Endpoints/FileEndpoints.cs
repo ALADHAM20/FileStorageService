@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Claims;
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using Microsoft.AspNetCore.WebUtilities;
@@ -14,33 +15,38 @@ public static class FileEndpoints
         app.MapGet("/api/files", SearchAsync)
             .WithName("SearchFiles")
             .WithOpenApi()
-            .Produces<PagedResponse<StoredFileResponse>>(StatusCodes.Status200OK);
+            .Produces<PagedResponse<StoredFileResponse>>(StatusCodes.Status200OK)
+            .RequireAuthorization();
 
         app.MapGet("/api/files/{id:guid}/download", DownloadAsync)
             .WithName("DownloadFile")
             .WithOpenApi()
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status206PartialContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization();
 
         app.MapGet("/api/files/{id:guid}/preview", PreviewAsync)
             .WithName("PreviewFile")
             .WithOpenApi()
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status206PartialContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization();
 
         app.MapDelete("/api/files/{id:guid}", SoftDeleteAsync)
             .WithName("SoftDeleteFile")
             .WithOpenApi()
             .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization();
 
         app.MapDelete("/api/files/{id:guid}/hard", HardDeleteAsync)
             .WithName("HardDeleteFile")
             .WithOpenApi()
             .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization("AdminOnly");
 
         app.MapPost("/api/files", UploadAsync)
             .WithName("UploadFile")
@@ -52,7 +58,8 @@ public static class FileEndpoints
             })
             .Produces<StoredFileResponse>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
+            .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
+            .RequireAuthorization();
 
         return app;
     }
@@ -141,6 +148,7 @@ public static class FileEndpoints
 
     private static async Task<IResult> UploadAsync(
         HttpRequest request,
+        ClaimsPrincipal user,
         IFileUploadService fileUploadService,
         CancellationToken cancellationToken)
     {
@@ -155,7 +163,7 @@ public static class FileEndpoints
         var boundary = GetMultipartBoundary(request.ContentType!);
         var reader = new MultipartReader(boundary, request.Body);
         var tags = new List<string>();
-        var createdByUserId = "development-user";
+        var createdByUserId = GetCurrentUserId(user);
 
         while (await reader.ReadNextSectionAsync(cancellationToken) is { } section)
         {
@@ -166,10 +174,7 @@ public static class FileEndpoints
 
             if (IsFormField(contentDisposition))
             {
-                await ReadFormFieldAsync(section, contentDisposition, tags, value =>
-                {
-                    createdByUserId = value;
-                }, cancellationToken);
+                await ReadFormFieldAsync(section, contentDisposition, tags, cancellationToken);
 
                 continue;
             }
@@ -236,7 +241,6 @@ public static class FileEndpoints
         MultipartSection section,
         ContentDispositionHeaderValue contentDisposition,
         List<string> tags,
-        Action<string> setCreatedByUserId,
         CancellationToken cancellationToken)
     {
         var fieldName = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value;
@@ -262,11 +266,13 @@ public static class FileEndpoints
             return;
         }
 
-        if (fieldName.Equals("createdByUserId", StringComparison.OrdinalIgnoreCase)
-            && !string.IsNullOrWhiteSpace(value))
-        {
-            setCreatedByUserId(value.Trim());
-        }
+    }
+
+    private static string GetCurrentUserId(ClaimsPrincipal user)
+    {
+        return user.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? user.FindFirstValue("sub")
+            ?? throw new InvalidOperationException("User id claim is missing.");
     }
 
     private static IEnumerable<string> ParseTags(string value)
@@ -312,11 +318,6 @@ public static class FileEndpoints
                             {
                                 Type = "string",
                                 Description = "Comma-separated tags."
-                            },
-                            ["createdByUserId"] = new OpenApiSchema
-                            {
-                                Type = "string",
-                                Description = "Temporary user id until JWT authentication is added."
                             },
                             ["file"] = new OpenApiSchema
                             {

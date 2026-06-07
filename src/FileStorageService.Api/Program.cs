@@ -1,11 +1,13 @@
 using FileStorageService.Application;
+using FileStorageService.Api.Auth;
 using FileStorageService.Api.Endpoints;
 using FileStorageService.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.AddJwtSwaggerSecurity());
+builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApplication();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -24,11 +26,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/", () => Results.Ok(new { Service = "FileStorageService.Api", Status = "Ready" }))
     .WithName("GetApiStatus")
     .WithOpenApi();
 
+app.MapAuthEndpoints();
 app.MapFileEndpoints();
 
 app.Run();
