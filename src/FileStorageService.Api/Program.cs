@@ -2,9 +2,19 @@ using FileStorageService.Application;
 using FileStorageService.Api.Auth;
 using FileStorageService.Api.Endpoints;
 using FileStorageService.Api.ErrorHandling;
+using FileStorageService.Api.Middleware;
 using FileStorageService.Infrastructure;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext();
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => options.AddJwtSwaggerSecurity());
@@ -35,6 +45,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("CorrelationId", httpContext.TraceIdentifier);
+        diagnosticContext.Set("UserId", httpContext.User.Identity?.Name);
+    };
+});
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
