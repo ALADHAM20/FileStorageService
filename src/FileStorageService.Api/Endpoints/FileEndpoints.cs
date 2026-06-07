@@ -11,6 +11,11 @@ public static class FileEndpoints
 {
     public static IEndpointRouteBuilder MapFileEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/files", SearchAsync)
+            .WithName("SearchFiles")
+            .WithOpenApi()
+            .Produces<PagedResponse<StoredFileResponse>>(StatusCodes.Status200OK);
+
         app.MapPost("/api/files", UploadAsync)
             .WithName("UploadFile")
             .WithOpenApi(operation =>
@@ -24,6 +29,31 @@ public static class FileEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
 
         return app;
+    }
+
+    private static async Task<IResult> SearchAsync(
+        IFileQueryService fileQueryService,
+        int pageNumber,
+        int pageSize,
+        string? name,
+        string? tag,
+        string? contentType,
+        DateTime? createdFromUtc,
+        DateTime? createdToUtc,
+        CancellationToken cancellationToken)
+    {
+        var request = new FileSearchRequest(
+            pageNumber,
+            pageSize,
+            name,
+            tag,
+            contentType,
+            createdFromUtc,
+            createdToUtc);
+
+        var response = await fileQueryService.SearchAsync(request, cancellationToken);
+
+        return Results.Ok(response);
     }
 
     private static async Task<IResult> UploadAsync(

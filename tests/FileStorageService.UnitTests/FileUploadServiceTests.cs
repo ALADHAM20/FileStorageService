@@ -112,6 +112,13 @@ public sealed class FileUploadServiceTests
             return Task.FromResult<StoredFile?>(null);
         }
 
+        public Task<StoredFileSearchResult> SearchAsync(
+            StoredFileSearchCriteria criteria,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new StoredFileSearchResult([], 0));
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             SaveChangesWasCalled = true;
