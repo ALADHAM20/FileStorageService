@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FileStorageService.Api\FileStorageService.Api.csproj" />
+    <ProjectReference Include="..\..\src\FileStorageService.Infrastructure\FileStorageService.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

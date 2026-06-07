@@ -8,7 +8,9 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("DefaultConnection is not configured.");
 
-builder.Services.AddInfrastructure(connectionString);
+var storageRootPath = builder.Configuration["Storage:RootPath"] ?? "_storage";
+
+builder.Services.AddInfrastructure(connectionString, storageRootPath);
 
 var app = builder.Build();
 
