@@ -9,4 +9,6 @@ public sealed class JwtOptions
     public string Audience { get; init; } = string.Empty;
 
     public string SigningKey { get; init; } = string.Empty;
+
+    public int MockTokenLifetimeMinutes { get; init; } = 480;
 }

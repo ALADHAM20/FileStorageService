@@ -49,6 +49,12 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
     {
         var problemDetails = exception switch
         {
+            InvalidDataException => new ProblemDetails
+            {
+                Status = StatusCodes.Status413PayloadTooLarge,
+                Title = "Upload is too large.",
+                Detail = exception.Message
+            },
             ArgumentException => new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,

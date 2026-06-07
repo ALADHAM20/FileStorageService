@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using FileStorageService.Application;
 using FileStorageService.Api.Auth;
-using FileStorageService.Api.Endpoints;
 using FileStorageService.Api.ErrorHandling;
 using FileStorageService.Api.Middleware;
+using FileStorageService.Api.Options;
+using FileStorageService.Api.Swagger;
 using FileStorageService.Infrastructure;
 using Serilog;
 
@@ -17,7 +19,19 @@ builder.Host.UseSerilog((context, services, configuration) =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => options.AddJwtSwaggerSecurity());
+builder.Services.AddControllers();
+builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddJwtSwaggerSecurity();
+    options.OperationFilter<MultipartFileUploadOperationFilter>();
+
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, "FileStorageService.Api.xml");
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails(options =>
@@ -27,7 +41,7 @@ builder.Services.AddProblemDetails(options =>
         context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
     };
 });
-builder.Services.AddApplication();
+builder.Services.AddApplication(builder.Configuration);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("DefaultConnection is not configured.");
@@ -51,18 +65,13 @@ app.UseSerilogRequestLogging(options =>
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
     {
         diagnosticContext.Set("CorrelationId", httpContext.TraceIdentifier);
-        diagnosticContext.Set("UserId", httpContext.User.Identity?.Name);
+        diagnosticContext.Set("UserId", httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
     };
 });
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => Results.Ok(new { Service = "FileStorageService.Api", Status = "Ready" }))
-    .WithName("GetApiStatus")
-    .WithOpenApi();
-
-app.MapAuthEndpoints();
-app.MapFileEndpoints();
+app.MapControllers();
 
 app.Run();

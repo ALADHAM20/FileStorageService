@@ -1,8 +1,10 @@
 using System.Text;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Application.Models;
+using FileStorageService.Application.Options;
 using FileStorageService.Application.Services;
 using FileStorageService.Domain.Entities;
+using Microsoft.Extensions.Options;
 
 namespace FileStorageService.UnitTests;
 
@@ -14,7 +16,8 @@ public sealed class FilePreviewServiceTests
         var storedFile = CreateStoredFile("application/pdf");
         var service = new FilePreviewService(
             new FakeFileStorageService(),
-            new FakeStoredFileRepository(storedFile));
+            new FakeStoredFileRepository(storedFile),
+            CreateOptions());
 
         var response = await service.GetPreviewAsync(storedFile.Id, CancellationToken.None);
 
@@ -28,7 +31,8 @@ public sealed class FilePreviewServiceTests
         var storedFile = CreateStoredFile("image/png");
         var service = new FilePreviewService(
             new FakeFileStorageService(),
-            new FakeStoredFileRepository(storedFile));
+            new FakeStoredFileRepository(storedFile),
+            CreateOptions());
 
         var response = await service.GetPreviewAsync(storedFile.Id, CancellationToken.None);
 
@@ -42,7 +46,8 @@ public sealed class FilePreviewServiceTests
         var storedFile = CreateStoredFile("application/zip");
         var service = new FilePreviewService(
             new FakeFileStorageService(),
-            new FakeStoredFileRepository(storedFile));
+            new FakeStoredFileRepository(storedFile),
+            CreateOptions());
 
         var response = await service.GetPreviewAsync(storedFile.Id, CancellationToken.None);
 
@@ -61,6 +66,15 @@ public sealed class FilePreviewServiceTests
             [],
             new DateTime(2026, 6, 7, 10, 0, 0, DateTimeKind.Utc),
             "user-1");
+    }
+
+    private static IOptions<FilePreviewOptions> CreateOptions()
+    {
+        return Options.Create(new FilePreviewOptions
+        {
+            AllowedContentTypes = ["application/pdf"],
+            AllowedContentTypePrefixes = ["image/"]
+        });
     }
 
     private sealed class FakeFileStorageService : IFileStorageService

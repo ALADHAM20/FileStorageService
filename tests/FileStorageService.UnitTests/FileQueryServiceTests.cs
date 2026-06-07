@@ -1,8 +1,10 @@
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Application.Models;
+using FileStorageService.Application.Options;
 using FileStorageService.Application.Services;
 using FileStorageService.Domain.Entities;
+using Microsoft.Extensions.Options;
 
 namespace FileStorageService.UnitTests;
 
@@ -12,7 +14,13 @@ public sealed class FileQueryServiceTests
     public async Task SearchAsync_WhenPagingIsOutOfRange_NormalizesPaging()
     {
         var repository = new FakeStoredFileRepository();
-        var service = new FileQueryService(repository);
+        var service = new FileQueryService(
+            repository,
+            Options.Create(new FileQueryOptions
+            {
+                DefaultPageSize = 20,
+                MaxPageSize = 100
+            }));
 
         await service.SearchAsync(
             new FileSearchRequest(PageNumber: -1, PageSize: 500),
@@ -39,7 +47,13 @@ public sealed class FileQueryServiceTests
 
         var repository = new FakeStoredFileRepository(
             new StoredFileSearchResult([storedFile], TotalCount: 1));
-        var service = new FileQueryService(repository);
+        var service = new FileQueryService(
+            repository,
+            Options.Create(new FileQueryOptions
+            {
+                DefaultPageSize = 20,
+                MaxPageSize = 100
+            }));
 
         var response = await service.SearchAsync(
             new FileSearchRequest(),
