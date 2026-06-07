@@ -263,9 +263,7 @@ public static class FileEndpoints
             || fieldName.Equals("tag", StringComparison.OrdinalIgnoreCase))
         {
             tags.AddRange(ParseTags(value));
-            return;
         }
-
     }
 
     private static string GetCurrentUserId(ClaimsPrincipal user)

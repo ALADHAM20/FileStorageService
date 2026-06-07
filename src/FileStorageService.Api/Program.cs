@@ -1,6 +1,7 @@
 using FileStorageService.Application;
 using FileStorageService.Api.Auth;
 using FileStorageService.Api.Endpoints;
+using FileStorageService.Api.ErrorHandling;
 using FileStorageService.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => options.AddJwtSwaggerSecurity());
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    };
+});
 builder.Services.AddApplication();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -26,6 +35,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
