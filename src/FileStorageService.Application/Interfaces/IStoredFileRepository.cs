@@ -13,5 +13,7 @@ public interface IStoredFileRepository
         StoredFileSearchCriteria criteria,
         CancellationToken cancellationToken);
 
+    void Remove(StoredFile storedFile);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

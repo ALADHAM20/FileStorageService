@@ -103,6 +103,11 @@ public sealed class FileDownloadServiceTests
             throw new NotImplementedException();
         }
 
+        public void Remove(StoredFile storedFile)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();

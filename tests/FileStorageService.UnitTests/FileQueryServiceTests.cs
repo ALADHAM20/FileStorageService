@@ -89,6 +89,11 @@ public sealed class FileQueryServiceTests
             return Task.FromResult(_result);
         }
 
+        public void Remove(StoredFile storedFile)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();

@@ -75,6 +75,11 @@ public sealed class StoredFileRepository : IStoredFileRepository
         return new StoredFileSearchResult(items, totalCount);
     }
 
+    public void Remove(StoredFile storedFile)
+    {
+        _dbContext.StoredFiles.Remove(storedFile);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         await _dbContext.SaveChangesAsync(cancellationToken);

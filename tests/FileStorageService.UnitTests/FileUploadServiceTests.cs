@@ -119,6 +119,11 @@ public sealed class FileUploadServiceTests
             return Task.FromResult(new StoredFileSearchResult([], 0));
         }
 
+        public void Remove(StoredFile storedFile)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             SaveChangesWasCalled = true;

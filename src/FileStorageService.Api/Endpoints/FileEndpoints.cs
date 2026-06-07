@@ -30,6 +30,18 @@ public static class FileEndpoints
             .Produces(StatusCodes.Status206PartialContent)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        app.MapDelete("/api/files/{id:guid}", SoftDeleteAsync)
+            .WithName("SoftDeleteFile")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        app.MapDelete("/api/files/{id:guid}/hard", HardDeleteAsync)
+            .WithName("HardDeleteFile")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/files", UploadAsync)
             .WithName("UploadFile")
             .WithOpenApi(operation =>
@@ -43,6 +55,26 @@ public static class FileEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
 
         return app;
+    }
+
+    private static async Task<IResult> SoftDeleteAsync(
+        Guid id,
+        IFileDeleteService fileDeleteService,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await fileDeleteService.SoftDeleteAsync(id, cancellationToken);
+
+        return deleted ? Results.NoContent() : Results.NotFound();
+    }
+
+    private static async Task<IResult> HardDeleteAsync(
+        Guid id,
+        IFileDeleteService fileDeleteService,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await fileDeleteService.HardDeleteAsync(id, cancellationToken);
+
+        return deleted ? Results.NoContent() : Results.NotFound();
     }
 
     private static async Task<IResult> PreviewAsync(
