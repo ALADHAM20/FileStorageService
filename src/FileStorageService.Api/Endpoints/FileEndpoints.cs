@@ -16,6 +16,13 @@ public static class FileEndpoints
             .WithOpenApi()
             .Produces<PagedResponse<StoredFileResponse>>(StatusCodes.Status200OK);
 
+        app.MapGet("/api/files/{id:guid}/download", DownloadAsync)
+            .WithName("DownloadFile")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status206PartialContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/files", UploadAsync)
             .WithName("UploadFile")
             .WithOpenApi(operation =>
@@ -29,6 +36,25 @@ public static class FileEndpoints
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType);
 
         return app;
+    }
+
+    private static async Task<IResult> DownloadAsync(
+        Guid id,
+        IFileDownloadService fileDownloadService,
+        CancellationToken cancellationToken)
+    {
+        var response = await fileDownloadService.GetDownloadAsync(id, cancellationToken);
+
+        if (response is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.File(
+            response.Content,
+            response.ContentType,
+            response.OriginalName,
+            enableRangeProcessing: true);
     }
 
     private static async Task<IResult> SearchAsync(
