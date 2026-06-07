@@ -1,4 +1,5 @@
 using FileStorageService.Application;
+using FileStorageService.Api.Endpoints;
 using FileStorageService.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,5 +28,7 @@ app.UseHttpsRedirection();
 app.MapGet("/", () => Results.Ok(new { Service = "FileStorageService.Api", Status = "Ready" }))
     .WithName("GetApiStatus")
     .WithOpenApi();
+
+app.MapFileEndpoints();
 
 app.Run();

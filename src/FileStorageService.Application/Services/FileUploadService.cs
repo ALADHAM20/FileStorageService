@@ -1,5 +1,6 @@
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
+using FileStorageService.Application.Models;
 using FileStorageService.Domain.Entities;
 
 namespace FileStorageService.Application.Services;
@@ -24,27 +25,40 @@ public sealed class FileUploadService : IFileUploadService
         ValidateRequest(request);
 
         var createdAtUtc = DateTime.UtcNow;
+        StoredFileContentResult? storedContent = null;
 
-        var storedContent = await _fileStorageService.SaveAsync(
-            request.Content,
-            createdAtUtc,
-            cancellationToken);
+        try
+        {
+            storedContent = await _fileStorageService.SaveAsync(
+                request.Content,
+                createdAtUtc,
+                cancellationToken);
 
-        var storedFile = StoredFile.Create(
-            Guid.NewGuid(),
-            request.OriginalName,
-            storedContent.StoredKey,
-            storedContent.SizeBytes,
-            request.ContentType,
-            storedContent.Sha256Checksum,
-            request.Tags,
-            createdAtUtc,
-            request.CreatedByUserId);
+            var storedFile = StoredFile.Create(
+                Guid.NewGuid(),
+                request.OriginalName,
+                storedContent.StoredKey,
+                storedContent.SizeBytes,
+                request.ContentType,
+                storedContent.Sha256Checksum,
+                request.Tags,
+                createdAtUtc,
+                request.CreatedByUserId);
 
-        await _storedFileRepository.AddAsync(storedFile, cancellationToken);
-        await _storedFileRepository.SaveChangesAsync(cancellationToken);
+            await _storedFileRepository.AddAsync(storedFile, cancellationToken);
+            await _storedFileRepository.SaveChangesAsync(cancellationToken);
 
-        return ToResponse(storedFile);
+            return ToResponse(storedFile);
+        }
+        catch
+        {
+            if (storedContent is not null)
+            {
+                await _fileStorageService.DeleteAsync(storedContent.StoredKey, CancellationToken.None);
+            }
+
+            throw;
+        }
     }
 
     private static void ValidateRequest(UploadFileRequest request)
