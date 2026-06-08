@@ -1,0 +1,125 @@
+<section class="storage-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Stored files</p>
+      <h1>Files</h1>
+      <p class="page-subtitle">Search, preview, download, and manage stored file records.</p>
+    </div>
+
+    <a class="primary-link" routerLink="/storage/upload">Upload file</a>
+  </header>
+
+  <form class="tool-panel" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+    <div class="filters-grid">
+      <label>
+        Name
+        <input type="text" formControlName="name" placeholder="report" />
+      </label>
+
+      <label>
+        Tag
+        <input type="text" formControlName="tag" placeholder="invoice" />
+      </label>
+
+      <label>
+        Content type
+        <select formControlName="contentType">
+          <option value="">Any</option>
+          <option value="application/pdf">PDF</option>
+          <option value="image/png">PNG</option>
+          <option value="image/jpeg">JPEG</option>
+        </select>
+      </label>
+
+      <label>
+        From
+        <input type="date" formControlName="createdFrom" />
+      </label>
+
+      <label>
+        To
+        <input type="date" formControlName="createdTo" />
+      </label>
+
+      <label>
+        Page size
+        <select formControlName="pageSize">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="50">50</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="button-row">
+      <button type="submit">Apply filters</button>
+      <button type="button" class="secondary-button" (click)="clearFilters()">Clear</button>
+      <button type="button" class="secondary-button" (click)="loadFiles()" [disabled]="isLoading">
+        {{ isLoading ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+  </form>
+
+  <div class="table-shell">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Size</th>
+          <th>Tags</th>
+          <th>Created</th>
+          <th>Owner</th>
+          <th>Checksum</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (file of files; track file.id) {
+          <tr>
+            <td>
+              <strong>{{ file.originalName }}</strong>
+              <span>{{ file.id }}</span>
+            </td>
+            <td>{{ file.contentType }}</td>
+            <td>{{ file.sizeBytes | number }} bytes</td>
+            <td>{{ file.tags.length ? file.tags.join(', ') : 'None' }}</td>
+            <td>{{ file.createdAtUtc | date: 'medium' }}</td>
+            <td>{{ file.createdByUserId }}</td>
+            <td class="checksum">{{ file.sha256Checksum }}</td>
+            <td>
+              <div class="action-row">
+                <button type="button" class="secondary-button" (click)="downloadFile(file)">Download</button>
+                @if (canPreview(file)) {
+                  <a class="secondary-link" [routerLink]="['/storage/files', file.id, 'preview']" [queryParams]="{ name: file.originalName }">
+                    Preview
+                  </a>
+                }
+                <button type="button" class="danger-button" (click)="softDeleteFile(file)">Soft delete</button>
+                @if (isAdmin) {
+                  <button type="button" class="danger-button" (click)="hardDeleteFile(file)">Hard delete</button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="empty">No files found.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination-bar">
+    <span>Page {{ pageNumber }} of {{ totalPages }} / {{ totalCount | number }} files</span>
+    <div class="button-row">
+      <button type="button" class="secondary-button" (click)="goToPreviousPage()" [disabled]="pageNumber <= 1">
+        Previous
+      </button>
+      <button type="button" class="secondary-button" (click)="goToNextPage()" [disabled]="pageNumber >= totalPages">
+        Next
+      </button>
+    </div>
+  </footer>
+</section>

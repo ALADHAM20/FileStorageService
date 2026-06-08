@@ -1,0 +1,23 @@
+<section class="preview-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Preview</p>
+      <h1>{{ fileName }}</h1>
+      <p class="page-subtitle">{{ contentType || 'Loading preview content' }}</p>
+    </div>
+
+    <a class="secondary-link" routerLink="/storage/files">Back to files</a>
+  </header>
+
+  <section class="preview-panel">
+    @if (isLoading) {
+      <p class="empty">Loading preview...</p>
+    } @else if (previewUrl && isImage) {
+      <img [src]="previewUrl" [alt]="fileName" />
+    } @else if (previewSafeUrl) {
+      <iframe [src]="previewSafeUrl" title="File preview"></iframe>
+    } @else {
+      <p class="empty">Preview is not available.</p>
+    }
+  </section>
+</section>

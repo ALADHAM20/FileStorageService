@@ -1,0 +1,59 @@
+<section class="upload-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Upload</p>
+      <h1>Add a file</h1>
+      <p class="page-subtitle">Drop a file here or choose one from disk. PDF, PNG, and JPG are supported.</p>
+    </div>
+
+    <a class="secondary-link" routerLink="/storage/files">Back to files</a>
+  </header>
+
+  <form class="upload-panel" [formGroup]="form" (ngSubmit)="upload()">
+    <div
+      class="drop-zone"
+      [class.dragging]="isDragging"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event)"
+    >
+      <p class="drop-title">Drag and drop a file</p>
+      <p class="drop-subtitle">or use the file picker below</p>
+      <input type="file" accept=".pdf,image/png,image/jpeg" (change)="onFileInputChanged($event)" />
+    </div>
+
+    @if (selectedFile) {
+      <div class="selected-file">
+        <div>
+          <strong>{{ selectedFile.name }}</strong>
+          <span>{{ selectedFile.size }} bytes</span>
+        </div>
+        <button type="button" class="secondary-button" (click)="clearSelection()" [disabled]="isUploading">Remove</button>
+      </div>
+    }
+
+    <label>
+      Tags
+      <input type="text" formControlName="tags" placeholder="invoice, finance, personal" />
+    </label>
+
+    @if (isUploading || uploadProgress > 0) {
+      <div class="progress-shell" aria-label="Upload progress">
+        <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+      </div>
+      <p class="progress-text">{{ uploadProgress }}% uploaded</p>
+    }
+
+    <div class="button-row">
+      <button type="submit" [disabled]="isUploading">
+        {{ isUploading ? 'Uploading...' : 'Upload file' }}
+      </button>
+
+      @if (failedFile) {
+        <button type="button" class="secondary-button" (click)="retryUpload()" [disabled]="isUploading">
+          Retry upload
+        </button>
+      }
+    </div>
+  </form>
+</section>

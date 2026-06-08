@@ -1,0 +1,173 @@
+.upload-page {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+}
+
+.page-header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+h1 {
+  color: #172033;
+  font-size: 1.7rem;
+  margin: 0;
+}
+
+.page-subtitle {
+  color: #64748b;
+  margin: 8px 0 0;
+}
+
+.upload-panel {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  padding: 22px;
+}
+
+.drop-zone {
+  align-items: center;
+  background: #f8fafc;
+  border: 2px dashed #93a4b7;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  min-height: 210px;
+  padding: 24px;
+  text-align: center;
+}
+
+.drop-zone.dragging {
+  background: #edf4ff;
+  border-color: #2563eb;
+}
+
+.drop-title {
+  color: #172033;
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.drop-subtitle,
+.progress-text {
+  color: #64748b;
+  margin: 0;
+}
+
+label {
+  color: #334155;
+  display: grid;
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 8px;
+}
+
+input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #172033;
+  font: inherit;
+  min-height: 40px;
+  padding: 0 10px;
+}
+
+input[type='file'] {
+  padding: 8px 10px;
+}
+
+.selected-file {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+.selected-file span {
+  color: #64748b;
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.progress-shell {
+  background: #e2e8f0;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: #2563eb;
+  height: 100%;
+  transition: width 160ms ease;
+}
+
+button,
+.secondary-link {
+  align-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 700;
+  min-height: 38px;
+  padding: 0 14px;
+  text-decoration: none;
+}
+
+button {
+  background: #172033;
+  border: 0;
+  color: #ffffff;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.secondary-button,
+.secondary-link {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #172033;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .upload-page {
+    padding: 20px 14px;
+  }
+
+  .page-header,
+  .selected-file {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
