@@ -2,9 +2,31 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-bg: #f3f6fb;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --text: #172033;
+  --muted: #64748b;
+  --muted-strong: #475569;
+  --line: #d9e2ec;
+  --line-soft: #e8eef6;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-soft: #edf4ff;
+  --success: #067647;
+  --success-soft: #ecfdf3;
+  --danger: #b42318;
+  --danger-soft: #fff1f3;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --shadow-soft: 0 14px 35px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
 body {
-  background: #f4f7fb;
-  color: #172033;
+  background: var(--app-bg);
+  color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
   margin: 0;
 }
@@ -13,4 +35,23 @@ button,
 input,
 select {
   font-family: inherit;
+}
+
+button,
+a,
+input,
+select {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 2px;
 }

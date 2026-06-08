@@ -1,7 +1,15 @@
 <section class="login-page">
+  <div class="login-copy">
+    <p class="eyebrow">Angular 17 client</p>
+    <h1>File Storage Service</h1>
+    <p>
+      Sign in with a mock token, then upload, preview, download, and manage files through the secured API.
+    </p>
+  </div>
+
   <div class="login-panel">
     <p class="eyebrow">Development access</p>
-    <h1>File Storage Service</h1>
+    <h2>Mock JWT login</h2>
     <p class="intro">Create a mock JWT to test the API as a normal user or admin.</p>
 
     <form [formGroup]="form" (ngSubmit)="login()" class="login-form">

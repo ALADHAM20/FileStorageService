@@ -1,4 +1,5 @@
 import { HttpEvent, HttpEventType } from '@angular/common/http';
+import { DecimalPipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,7 +13,7 @@ type UploadMode = 'standard' | 'resumable';
 @Component({
   selector: 'app-file-upload',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
   templateUrl: './file-upload.component.html',
   styleUrl: './file-upload.component.scss'
 })

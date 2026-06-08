@@ -3,7 +3,9 @@
     <div>
       <p class="eyebrow">Preview</p>
       <h1>{{ fileName }}</h1>
-      <p class="page-subtitle">{{ contentType || 'Loading preview content' }}</p>
+      <p class="page-subtitle">
+        <span>{{ contentType || 'Loading preview content' }}</span>
+      </p>
     </div>
 
     <a class="secondary-link" routerLink="/storage/files">Back to files</a>
