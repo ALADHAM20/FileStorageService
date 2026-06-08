@@ -1,0 +1,49 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: filestorage-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${SQL_SERVER_PASSWORD:-FileStorage_Dev_2026!}"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: src/FileStorageService.Api/Dockerfile
+    container_name: filestorage-api
+    depends_on:
+      - sqlserver
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=FileStorageService;User Id=sa;Password=${SQL_SERVER_PASSWORD:-FileStorage_Dev_2026!};Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True"
+      Database__ApplyMigrationsOnStartup: "true"
+      Database__MigrationRetryCount: "12"
+      Database__MigrationRetryDelaySeconds: "5"
+      Storage__RootPath: /app/_storage
+      Cors__AllowedOrigins__0: http://localhost:4200
+      Cors__AllowedOrigins__1: http://127.0.0.1:4200
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:-docker-development-signing-key-change-before-production-12345}"
+    ports:
+      - "5055:8080"
+    volumes:
+      - api-storage:/app/_storage
+
+  frontend:
+    build:
+      context: frontend/file-storage-client
+      dockerfile: Dockerfile
+    container_name: filestorage-frontend
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
+
+volumes:
+  sqlserver-data:
+  api-storage:

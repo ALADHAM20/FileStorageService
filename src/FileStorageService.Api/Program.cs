@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FileStorageService.Application;
 using FileStorageService.Api.Auth;
 using FileStorageService.Api.ErrorHandling;
+using FileStorageService.Api.Extensions;
 using FileStorageService.Api.Middleware;
 using FileStorageService.Api.Options;
 using FileStorageService.Api.Services;
@@ -94,5 +95,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+await app.ApplyDatabaseMigrationsIfEnabledAsync();
 
 app.Run();
