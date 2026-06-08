@@ -23,6 +23,7 @@ public sealed class FilePreviewServiceTests
 
         Assert.NotNull(response);
         Assert.Equal("application/pdf", response.ContentType);
+        Assert.Equal("\"abc123\"", response.ETag);
     }
 
     [Fact]
@@ -38,6 +39,7 @@ public sealed class FilePreviewServiceTests
 
         Assert.NotNull(response);
         Assert.Equal("image/png", response.ContentType);
+        Assert.Equal("\"abc123\"", response.ETag);
     }
 
     [Fact]

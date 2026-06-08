@@ -44,7 +44,8 @@ public sealed class FilePreviewService : IFilePreviewService
         return new FilePreviewResponse(
             content,
             storedFile.ContentType,
-            storedFile.SizeBytes);
+            storedFile.SizeBytes,
+            CreateETag(storedFile.Sha256Checksum));
     }
 
     private static bool CanPreview(string contentType, FilePreviewOptions options)
@@ -52,5 +53,10 @@ public sealed class FilePreviewService : IFilePreviewService
         return options.AllowedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase)
             || options.AllowedContentTypePrefixes.Any(prefix =>
                 contentType.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string CreateETag(string sha256Checksum)
+    {
+        return $"\"{sha256Checksum}\"";
     }
 }

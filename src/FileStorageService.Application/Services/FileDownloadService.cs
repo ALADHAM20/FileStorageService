@@ -40,6 +40,12 @@ public sealed class FileDownloadService : IFileDownloadService
             content,
             storedFile.OriginalName,
             storedFile.ContentType,
-            storedFile.SizeBytes);
+            storedFile.SizeBytes,
+            CreateETag(storedFile.Sha256Checksum));
+    }
+
+    private static string CreateETag(string sha256Checksum)
+    {
+        return $"\"{sha256Checksum}\"";
     }
 }

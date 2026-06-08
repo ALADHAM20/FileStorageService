@@ -32,6 +32,7 @@ public sealed class FileDownloadServiceTests
         Assert.Equal("report.pdf", response.OriginalName);
         Assert.Equal("application/pdf", response.ContentType);
         Assert.Equal(11, response.SizeBytes);
+        Assert.Equal("\"abc123\"", response.ETag);
     }
 
     [Fact]

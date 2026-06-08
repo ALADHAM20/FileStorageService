@@ -178,6 +178,7 @@ public sealed class FilesController : ControllerBase
     [HttpGet("{id:guid}/download")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status206PartialContent)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadAsync(
         Guid id,
@@ -190,11 +191,22 @@ public sealed class FilesController : ControllerBase
             return NotFound();
         }
 
+        if (RequestETagMatches(response.ETag))
+        {
+            response.Content.Dispose();
+            Response.Headers.ETag = response.ETag;
+
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         await CreateAuditLogAsync(
             id,
             AuditAction.Download,
             $"Downloaded file '{response.OriginalName}'.",
             cancellationToken);
+
+        Response.Headers.ETag = response.ETag;
+        Response.Headers.CacheControl = "private, max-age=0";
 
         return new FileStreamResult(response.Content, response.ContentType)
         {
@@ -209,6 +221,7 @@ public sealed class FilesController : ControllerBase
     [HttpGet("{id:guid}/preview")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status206PartialContent)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> PreviewAsync(
         Guid id,
@@ -221,11 +234,22 @@ public sealed class FilesController : ControllerBase
             return NotFound();
         }
 
+        if (RequestETagMatches(response.ETag))
+        {
+            response.Content.Dispose();
+            Response.Headers.ETag = response.ETag;
+
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         await CreateAuditLogAsync(
             id,
             AuditAction.Preview,
             "Previewed file content.",
             cancellationToken);
+
+        Response.Headers.ETag = response.ETag;
+        Response.Headers.CacheControl = "private, max-age=0";
 
         return new FileStreamResult(response.Content, response.ContentType)
         {
@@ -326,6 +350,20 @@ public sealed class FilesController : ControllerBase
         return contentDisposition.IsFileDisposition()
             && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
                 || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
+    }
+
+    private bool RequestETagMatches(string eTag)
+    {
+        var ifNoneMatch = Request.Headers.IfNoneMatch.ToString();
+
+        if (string.IsNullOrWhiteSpace(ifNoneMatch))
+        {
+            return false;
+        }
+
+        return ifNoneMatch
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(value => value == "*" || value.Equals(eTag, StringComparison.Ordinal));
     }
 
     private static async Task ReadFormFieldAsync(
