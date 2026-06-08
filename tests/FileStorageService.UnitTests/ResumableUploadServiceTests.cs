@@ -2,8 +2,10 @@ using System.Text;
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Application.Models;
+using FileStorageService.Application.Options;
 using FileStorageService.Application.Services;
 using FileStorageService.Domain.Entities;
+using Microsoft.Extensions.Options;
 
 namespace FileStorageService.UnitTests;
 
@@ -31,6 +33,7 @@ public sealed class ResumableUploadServiceTests
         Assert.Equal(1024, response.TotalSizeBytes);
         Assert.Equal(0, response.UploadedBytes);
         Assert.Equal("Active", response.Status);
+        Assert.InRange(response.ExpiresAtUtc, response.CreatedAtUtc.AddHours(6).AddSeconds(-1), response.CreatedAtUtc.AddHours(6).AddSeconds(1));
         Assert.NotNull(uploadSessionRepository.UploadSession);
         Assert.True(resumableStorage.CreateWasCalled);
     }
@@ -77,7 +80,11 @@ public sealed class ResumableUploadServiceTests
             new FakeFileStorageService(),
             resumableStorage ?? new FakeResumableUploadStorageService(),
             storedFileRepository ?? new FakeStoredFileRepository(),
-            uploadSessionRepository ?? new FakeUploadSessionRepository());
+            uploadSessionRepository ?? new FakeUploadSessionRepository(),
+            Options.Create(new ResumableUploadOptions
+            {
+                SessionLifetimeHours = 6
+            }));
     }
 
     private sealed class FakeFileStorageService : IFileStorageService

@@ -1,8 +1,8 @@
-using System.Security.Claims;
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Api.Options;
 using FileStorageService.Api.Requests;
+using FileStorageService.Api.Services;
 using FileStorageService.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,16 +20,19 @@ public sealed class UploadSessionsController : ControllerBase
 {
     private const string UploadOffsetHeaderName = "X-Upload-Offset";
 
-    private readonly IAuditLogService _auditLogService;
+    private readonly IAuditLogWriter _auditLogWriter;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IResumableUploadService _resumableUploadService;
     private readonly UploadOptions _uploadOptions;
 
     public UploadSessionsController(
-        IAuditLogService auditLogService,
+        IAuditLogWriter auditLogWriter,
+        ICurrentUserService currentUserService,
         IResumableUploadService resumableUploadService,
         IOptions<UploadOptions> uploadOptions)
     {
-        _auditLogService = auditLogService;
+        _auditLogWriter = auditLogWriter;
+        _currentUserService = currentUserService;
         _resumableUploadService = resumableUploadService;
         _uploadOptions = uploadOptions.Value;
     }
@@ -68,11 +71,12 @@ public sealed class UploadSessionsController : ControllerBase
                 request.ContentType,
                 request.TotalSizeBytes,
                 request.Tags ?? [],
-                GetCurrentUserId()),
+                _currentUserService.UserId),
             cancellationToken);
 
-        await CreateAuditLogAsync(
+        await _auditLogWriter.WriteAsync(
             null,
+            AuditAction.Upload,
             $"Started resumable upload session '{response.Id}' for '{response.OriginalName}'.",
             cancellationToken);
 
@@ -120,8 +124,9 @@ public sealed class UploadSessionsController : ControllerBase
             return NotFound();
         }
 
-        await CreateAuditLogAsync(
+        await _auditLogWriter.WriteAsync(
             response.Id,
+            AuditAction.Upload,
             $"Completed resumable upload for '{response.OriginalName}'.",
             cancellationToken);
 
@@ -147,26 +152,4 @@ public sealed class UploadSessionsController : ControllerBase
         return uploadOffset;
     }
 
-    private string GetCurrentUserId()
-    {
-        return User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? throw new InvalidOperationException("User id claim is missing.");
-    }
-
-    private async Task CreateAuditLogAsync(
-        Guid? fileId,
-        string details,
-        CancellationToken cancellationToken)
-    {
-        var request = new CreateAuditLogRequest(
-            fileId,
-            AuditAction.Upload,
-            GetCurrentUserId(),
-            HttpContext.Connection.RemoteIpAddress?.ToString(),
-            HttpContext.TraceIdentifier,
-            details);
-
-        await _auditLogService.CreateAsync(request, cancellationToken);
-    }
 }

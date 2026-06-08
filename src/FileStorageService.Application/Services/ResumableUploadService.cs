@@ -1,16 +1,17 @@
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Application.Models;
+using FileStorageService.Application.Options;
 using FileStorageService.Domain.Entities;
 using FileStorageService.Domain.Enums;
+using Microsoft.Extensions.Options;
 
 namespace FileStorageService.Application.Services;
 
 public sealed class ResumableUploadService : IResumableUploadService
 {
-    private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(24);
-
     private readonly IFileStorageService _fileStorageService;
+    private readonly ResumableUploadOptions _options;
     private readonly IResumableUploadStorageService _resumableUploadStorageService;
     private readonly IStoredFileRepository _storedFileRepository;
     private readonly IUploadSessionRepository _uploadSessionRepository;
@@ -19,9 +20,11 @@ public sealed class ResumableUploadService : IResumableUploadService
         IFileStorageService fileStorageService,
         IResumableUploadStorageService resumableUploadStorageService,
         IStoredFileRepository storedFileRepository,
-        IUploadSessionRepository uploadSessionRepository)
+        IUploadSessionRepository uploadSessionRepository,
+        IOptions<ResumableUploadOptions> options)
     {
         _fileStorageService = fileStorageService;
+        _options = options.Value;
         _resumableUploadStorageService = resumableUploadStorageService;
         _storedFileRepository = storedFileRepository;
         _uploadSessionRepository = uploadSessionRepository;
@@ -44,7 +47,7 @@ public sealed class ResumableUploadService : IResumableUploadService
             request.Tags,
             request.CreatedByUserId,
             now,
-            now.Add(SessionLifetime),
+            now.Add(_options.SessionLifetime),
             tempStoredKey);
 
         await _resumableUploadStorageService.CreateAsync(tempStoredKey, cancellationToken);

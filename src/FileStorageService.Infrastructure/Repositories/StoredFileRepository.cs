@@ -54,19 +54,26 @@ public sealed class StoredFileRepository : IStoredFileRepository
             query = query.Where(storedFile => storedFile.CreatedAtUtc <= criteria.CreatedToUtc.Value);
         }
 
-        var files = await query
-            .OrderByDescending(storedFile => storedFile.CreatedAtUtc)
-            .ToListAsync(cancellationToken);
+        var orderedQuery = query.OrderByDescending(storedFile => storedFile.CreatedAtUtc);
+        var skip = (criteria.PageNumber - 1) * criteria.PageSize;
 
-        if (!string.IsNullOrWhiteSpace(criteria.Tag))
+        if (string.IsNullOrWhiteSpace(criteria.Tag))
         {
-            files = files
-                .Where(storedFile => storedFile.Tags.Contains(criteria.Tag, StringComparer.OrdinalIgnoreCase))
-                .ToList();
+            var pagedTotalCount = await query.CountAsync(cancellationToken);
+            var pagedItems = await orderedQuery
+                .Skip(skip)
+                .Take(criteria.PageSize)
+                .ToArrayAsync(cancellationToken);
+
+            return new StoredFileSearchResult(pagedItems, pagedTotalCount);
         }
 
+        var files = await orderedQuery.ToListAsync(cancellationToken);
+        files = files
+            .Where(storedFile => storedFile.Tags.Contains(criteria.Tag, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
         var totalCount = files.Count;
-        var skip = (criteria.PageNumber - 1) * criteria.PageSize;
         var items = files
             .Skip(skip)
             .Take(criteria.PageSize)

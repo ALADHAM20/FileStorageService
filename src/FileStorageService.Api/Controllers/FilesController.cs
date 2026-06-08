@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Api.Filters;
@@ -20,7 +19,8 @@ namespace FileStorageService.Api.Controllers;
 [Route("api/files")]
 public sealed class FilesController : ControllerBase
 {
-    private readonly IAuditLogService _auditLogService;
+    private readonly IAuditLogWriter _auditLogWriter;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IFileDeleteService _fileDeleteService;
     private readonly IFileDownloadService _fileDownloadService;
     private readonly IFilePreviewService _filePreviewService;
@@ -30,7 +30,8 @@ public sealed class FilesController : ControllerBase
     private readonly UploadOptions _uploadOptions;
 
     public FilesController(
-        IAuditLogService auditLogService,
+        IAuditLogWriter auditLogWriter,
+        ICurrentUserService currentUserService,
         IFileDeleteService fileDeleteService,
         IFileDownloadService fileDownloadService,
         IFilePreviewService filePreviewService,
@@ -39,7 +40,8 @@ public sealed class FilesController : ControllerBase
         MultipartUploadRequestReader multipartUploadRequestReader,
         IOptions<UploadOptions> uploadOptions)
     {
-        _auditLogService = auditLogService;
+        _auditLogWriter = auditLogWriter;
+        _currentUserService = currentUserService;
         _fileDeleteService = fileDeleteService;
         _fileDownloadService = fileDownloadService;
         _filePreviewService = filePreviewService;
@@ -109,10 +111,10 @@ public sealed class FilesController : ControllerBase
             file.OriginalName,
             file.ContentType,
             file.Tags,
-            GetCurrentUserId());
+            _currentUserService.UserId);
 
         var response = await _fileUploadService.UploadAsync(uploadRequest, cancellationToken);
-        await CreateAuditLogAsync(
+        await _auditLogWriter.WriteAsync(
             response.Id,
             AuditAction.Upload,
             $"Uploaded file '{response.OriginalName}'.",
@@ -148,7 +150,7 @@ public sealed class FilesController : ControllerBase
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
-        await CreateAuditLogAsync(
+        await _auditLogWriter.WriteAsync(
             id,
             AuditAction.Download,
             $"Downloaded file '{response.OriginalName}'.",
@@ -191,7 +193,7 @@ public sealed class FilesController : ControllerBase
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
-        await CreateAuditLogAsync(
+        await _auditLogWriter.WriteAsync(
             id,
             AuditAction.Preview,
             "Previewed file content.",
@@ -220,7 +222,7 @@ public sealed class FilesController : ControllerBase
 
         if (deleted)
         {
-            await CreateAuditLogAsync(
+            await _auditLogWriter.WriteAsync(
                 id,
                 AuditAction.SoftDelete,
                 "Soft deleted file.",
@@ -252,7 +254,7 @@ public sealed class FilesController : ControllerBase
 
         if (deleted)
         {
-            await CreateAuditLogAsync(
+            await _auditLogWriter.WriteAsync(
                 id,
                 AuditAction.HardDelete,
                 "Permanently deleted file.",
@@ -282,27 +284,4 @@ public sealed class FilesController : ControllerBase
             .Any(value => value == "*" || value.Equals(eTag, StringComparison.Ordinal));
     }
 
-    private string GetCurrentUserId()
-    {
-        return User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? throw new InvalidOperationException("User id claim is missing.");
-    }
-
-    private async Task CreateAuditLogAsync(
-        Guid? fileId,
-        AuditAction action,
-        string details,
-        CancellationToken cancellationToken)
-    {
-        var request = new CreateAuditLogRequest(
-            fileId,
-            action,
-            GetCurrentUserId(),
-            HttpContext.Connection.RemoteIpAddress?.ToString(),
-            HttpContext.TraceIdentifier,
-            details);
-
-        await _auditLogService.CreateAsync(request, cancellationToken);
-    }
 }
