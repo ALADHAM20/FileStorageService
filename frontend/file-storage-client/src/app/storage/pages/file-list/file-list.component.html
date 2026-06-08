@@ -81,30 +81,46 @@
               <strong>{{ file.originalName }}</strong>
               <span>{{ file.id }}</span>
             </td>
-            <td>{{ file.contentType }}</td>
-            <td>{{ file.sizeBytes | number }} bytes</td>
-            <td>{{ file.tags.length ? file.tags.join(', ') : 'None' }}</td>
+            <td><span class="type-pill">{{ file.contentType }}</span></td>
+            <td>
+              <strong class="size-value">{{ file.sizeBytes | number }}</strong>
+              <span>bytes</span>
+            </td>
+            <td>
+              @if (file.tags.length) {
+                <div class="tag-list">
+                  @for (tag of file.tags; track tag) {
+                    <span class="tag-pill">{{ tag }}</span>
+                  }
+                </div>
+              } @else {
+                <span>None</span>
+              }
+            </td>
             <td>{{ file.createdAtUtc | date: 'medium' }}</td>
             <td>{{ file.createdByUserId }}</td>
-            <td class="checksum">{{ file.sha256Checksum }}</td>
+            <td class="checksum"><code>{{ file.sha256Checksum }}</code></td>
             <td>
               <div class="action-row">
-                <button type="button" class="secondary-button" (click)="downloadFile(file)">Download</button>
+                <button type="button" class="secondary-button compact-button" (click)="downloadFile(file)">Download</button>
                 @if (canPreview(file)) {
-                  <a class="secondary-link" [routerLink]="['/storage/files', file.id, 'preview']" [queryParams]="{ name: file.originalName }">
+                  <a class="secondary-link compact-button" [routerLink]="['/storage/files', file.id, 'preview']" [queryParams]="{ name: file.originalName }">
                     Preview
                   </a>
                 }
-                <button type="button" class="danger-button" (click)="softDeleteFile(file)">Soft delete</button>
+                <button type="button" class="danger-button compact-button" (click)="softDeleteFile(file)">Soft delete</button>
                 @if (isAdmin) {
-                  <button type="button" class="danger-button" (click)="hardDeleteFile(file)">Hard delete</button>
+                  <button type="button" class="danger-button compact-button" (click)="hardDeleteFile(file)">Hard delete</button>
                 }
               </div>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="8" class="empty">No files found.</td>
+            <td colspan="8" class="empty">
+              <strong>No files found</strong>
+              <span>Try changing the filters or upload a new file.</span>
+            </td>
           </tr>
         }
       </tbody>

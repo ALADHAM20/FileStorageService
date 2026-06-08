@@ -1,0 +1,110 @@
+<section class="audit-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Admin</p>
+      <h1>Audit logs</h1>
+      <p class="page-subtitle">Review file activity recorded by the backend.</p>
+    </div>
+
+    <a class="secondary-link" routerLink="/storage/files">Back to files</a>
+  </header>
+
+  <form class="tool-panel" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+    <div class="filters-grid">
+      <label>
+        File id
+        <input type="text" formControlName="fileId" placeholder="GUID" />
+      </label>
+
+      <label>
+        Action
+        <select formControlName="action">
+          <option value="">Any</option>
+          @for (action of actions; track action) {
+            <option [value]="action">{{ action }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        User
+        <input type="text" formControlName="userId" placeholder="admin-1" />
+      </label>
+
+      <label>
+        From
+        <input type="date" formControlName="from" />
+      </label>
+
+      <label>
+        To
+        <input type="date" formControlName="to" />
+      </label>
+
+      <label>
+        Page size
+        <select formControlName="pageSize">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="50">50</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="button-row">
+      <button type="submit">Apply filters</button>
+      <button type="button" class="secondary-button" (click)="clearFilters()">Clear</button>
+      <button type="button" class="secondary-button" (click)="loadAuditLogs()" [disabled]="isLoading">
+        {{ isLoading ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+  </form>
+
+  <div class="table-shell">
+    <table>
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>File</th>
+          <th>User</th>
+          <th>Occurred</th>
+          <th>IP</th>
+          <th>Correlation</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (auditLog of auditLogs; track auditLog.id) {
+          <tr>
+            <td><span class="action-pill">{{ auditLog.action }}</span></td>
+            <td class="mono">{{ auditLog.fileId || 'System' }}</td>
+            <td><span class="user-pill">{{ auditLog.userId }}</span></td>
+            <td>{{ auditLog.occurredAtUtc | date: 'medium' }}</td>
+            <td>{{ auditLog.ipAddress || 'Unknown' }}</td>
+            <td class="mono">{{ auditLog.correlationId || 'None' }}</td>
+            <td>{{ auditLog.details || 'No details' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty">
+              <strong>No audit logs found</strong>
+              <span>Try changing the filters or perform a file operation.</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination-bar">
+    <span>Page {{ pageNumber }} of {{ totalPages }} / {{ totalCount | number }} events</span>
+    <div class="button-row">
+      <button type="button" class="secondary-button" (click)="goToPreviousPage()" [disabled]="pageNumber <= 1">
+        Previous
+      </button>
+      <button type="button" class="secondary-button" (click)="goToNextPage()" [disabled]="pageNumber >= totalPages">
+        Next
+      </button>
+    </div>
+  </footer>
+</section>

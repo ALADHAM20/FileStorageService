@@ -51,7 +51,7 @@ public sealed class HealthController : ControllerBase
     public async Task<IActionResult> Ready(CancellationToken cancellationToken)
     {
         var databaseHealthy = await CanConnectToDatabaseAsync(cancellationToken);
-        var storageHealthy = CanReadAndWriteStorage();
+        var storageHealthy = await CanReadAndWriteStorageAsync(cancellationToken);
         var isHealthy = databaseHealthy && storageHealthy;
 
         var response = new
@@ -83,7 +83,7 @@ public sealed class HealthController : ControllerBase
         }
     }
 
-    private bool CanReadAndWriteStorage()
+    private async Task<bool> CanReadAndWriteStorageAsync(CancellationToken cancellationToken)
     {
         var storageRootPath = _configuration["Storage:RootPath"] ?? "_storage";
         var rootPath = Path.GetFullPath(storageRootPath);
@@ -92,8 +92,8 @@ public sealed class HealthController : ControllerBase
         try
         {
             Directory.CreateDirectory(rootPath);
-            System.IO.File.WriteAllText(testFilePath, "health-check");
-            var content = System.IO.File.ReadAllText(testFilePath);
+            await System.IO.File.WriteAllTextAsync(testFilePath, "health-check", cancellationToken);
+            var content = await System.IO.File.ReadAllTextAsync(testFilePath, cancellationToken);
 
             return content == "health-check";
         }

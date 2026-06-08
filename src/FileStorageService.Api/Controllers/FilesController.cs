@@ -1,15 +1,13 @@
-using System.Security.Claims;
-using System.Text;
 using FileStorageService.Application.Dtos;
 using FileStorageService.Application.Interfaces;
 using FileStorageService.Api.Filters;
 using FileStorageService.Api.Options;
 using FileStorageService.Api.Responses;
+using FileStorageService.Api.Services;
+using FileStorageService.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
 
 namespace FileStorageService.Api.Controllers;
 
@@ -21,26 +19,35 @@ namespace FileStorageService.Api.Controllers;
 [Route("api/files")]
 public sealed class FilesController : ControllerBase
 {
+    private readonly IAuditLogWriter _auditLogWriter;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IFileDeleteService _fileDeleteService;
     private readonly IFileDownloadService _fileDownloadService;
     private readonly IFilePreviewService _filePreviewService;
     private readonly IFileQueryService _fileQueryService;
     private readonly IFileUploadService _fileUploadService;
+    private readonly MultipartUploadRequestReader _multipartUploadRequestReader;
     private readonly UploadOptions _uploadOptions;
 
     public FilesController(
+        IAuditLogWriter auditLogWriter,
+        ICurrentUserService currentUserService,
         IFileDeleteService fileDeleteService,
         IFileDownloadService fileDownloadService,
         IFilePreviewService filePreviewService,
         IFileQueryService fileQueryService,
         IFileUploadService fileUploadService,
+        MultipartUploadRequestReader multipartUploadRequestReader,
         IOptions<UploadOptions> uploadOptions)
     {
+        _auditLogWriter = auditLogWriter;
+        _currentUserService = currentUserService;
         _fileDeleteService = fileDeleteService;
         _fileDownloadService = fileDownloadService;
         _filePreviewService = filePreviewService;
         _fileQueryService = fileQueryService;
         _fileUploadService = fileUploadService;
+        _multipartUploadRequestReader = multipartUploadRequestReader;
         _uploadOptions = uploadOptions.Value;
     }
 
@@ -85,82 +92,35 @@ public sealed class FilesController : ControllerBase
     public async Task<ActionResult<StoredFileResponse>> UploadAsync(
         CancellationToken cancellationToken)
     {
-        if (!IsMultipartRequest(Request))
+        var readResult = await _multipartUploadRequestReader.ReadAsync(
+            Request,
+            _uploadOptions,
+            cancellationToken);
+
+        if (!readResult.IsSuccess)
         {
             return Problem(
-                title: "Unsupported content type.",
-                detail: "Use multipart/form-data with a file field.",
-                statusCode: StatusCodes.Status415UnsupportedMediaType);
+                title: readResult.ErrorTitle,
+                detail: readResult.ErrorDetail,
+                statusCode: readResult.StatusCode);
         }
 
-        if (Request.ContentLength > _uploadOptions.MaxUploadBytes)
-        {
-            return Problem(
-                title: "Upload is too large.",
-                detail: $"Maximum upload size is {_uploadOptions.MaxUploadBytes} bytes.",
-                statusCode: StatusCodes.Status413PayloadTooLarge);
-        }
+        var file = readResult.Request!;
+        var uploadRequest = new UploadFileRequest(
+            file.Content,
+            file.OriginalName,
+            file.ContentType,
+            file.Tags,
+            _currentUserService.UserId);
 
-        var boundary = GetMultipartBoundary(Request.ContentType!);
-        var reader = new MultipartReader(boundary, Request.Body)
-        {
-            BodyLengthLimit = _uploadOptions.MaxUploadBytes
-        };
-        var tags = new List<string>();
+        var response = await _fileUploadService.UploadAsync(uploadRequest, cancellationToken);
+        await _auditLogWriter.WriteAsync(
+            response.Id,
+            AuditAction.Upload,
+            $"Uploaded file '{response.OriginalName}'.",
+            cancellationToken);
 
-        while (await reader.ReadNextSectionAsync(cancellationToken) is { } section)
-        {
-            if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition))
-            {
-                continue;
-            }
-
-            if (IsFormField(contentDisposition))
-            {
-                await ReadFormFieldAsync(section, contentDisposition, tags, cancellationToken);
-
-                continue;
-            }
-
-            if (!IsFileField(contentDisposition))
-            {
-                continue;
-            }
-
-            var originalName = GetSubmittedFileName(contentDisposition);
-            var contentType = string.IsNullOrWhiteSpace(section.ContentType)
-                ? "application/octet-stream"
-                : section.ContentType;
-
-            if (!IsAllowedContentType(contentType))
-            {
-                return Problem(
-                    title: "File type is not allowed.",
-                    detail: $"Content type '{contentType}' is not allowed.",
-                    statusCode: StatusCodes.Status415UnsupportedMediaType);
-            }
-
-            var uploadRequest = new UploadFileRequest(
-                section.Body,
-                originalName,
-                contentType,
-                tags,
-                GetCurrentUserId());
-
-            var response = await _fileUploadService.UploadAsync(uploadRequest, cancellationToken);
-
-            return Created($"/api/files/{response.Id}", response);
-        }
-
-        return BadRequest("Multipart request must include a file field.");
-    }
-
-    private bool IsAllowedContentType(string contentType)
-    {
-        return _uploadOptions.AllowedContentTypes.Length == 0
-            || _uploadOptions.AllowedContentTypes.Contains(
-                contentType,
-                StringComparer.OrdinalIgnoreCase);
+        return Created($"/api/files/{response.Id}", response);
     }
 
     /// <summary>
@@ -169,6 +129,7 @@ public sealed class FilesController : ControllerBase
     [HttpGet("{id:guid}/download")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status206PartialContent)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadAsync(
         Guid id,
@@ -180,6 +141,23 @@ public sealed class FilesController : ControllerBase
         {
             return NotFound();
         }
+
+        if (RequestETagMatches(response.ETag))
+        {
+            response.Content.Dispose();
+            Response.Headers.ETag = response.ETag;
+
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        await _auditLogWriter.WriteAsync(
+            id,
+            AuditAction.Download,
+            $"Downloaded file '{response.OriginalName}'.",
+            cancellationToken);
+
+        Response.Headers.ETag = response.ETag;
+        Response.Headers.CacheControl = "private, max-age=0";
 
         return new FileStreamResult(response.Content, response.ContentType)
         {
@@ -194,6 +172,7 @@ public sealed class FilesController : ControllerBase
     [HttpGet("{id:guid}/preview")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status206PartialContent)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> PreviewAsync(
         Guid id,
@@ -205,6 +184,23 @@ public sealed class FilesController : ControllerBase
         {
             return NotFound();
         }
+
+        if (RequestETagMatches(response.ETag))
+        {
+            response.Content.Dispose();
+            Response.Headers.ETag = response.ETag;
+
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        await _auditLogWriter.WriteAsync(
+            id,
+            AuditAction.Preview,
+            "Previewed file content.",
+            cancellationToken);
+
+        Response.Headers.ETag = response.ETag;
+        Response.Headers.CacheControl = "private, max-age=0";
 
         return new FileStreamResult(response.Content, response.ContentType)
         {
@@ -223,6 +219,15 @@ public sealed class FilesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var deleted = await _fileDeleteService.SoftDeleteAsync(id, cancellationToken);
+
+        if (deleted)
+        {
+            await _auditLogWriter.WriteAsync(
+                id,
+                AuditAction.SoftDelete,
+                "Soft deleted file.",
+                cancellationToken);
+        }
 
         return deleted
             ? Ok(new ApiResponse(
@@ -247,6 +252,15 @@ public sealed class FilesController : ControllerBase
     {
         var deleted = await _fileDeleteService.HardDeleteAsync(id, cancellationToken);
 
+        if (deleted)
+        {
+            await _auditLogWriter.WriteAsync(
+                id,
+                AuditAction.HardDelete,
+                "Permanently deleted file.",
+                cancellationToken);
+        }
+
         return deleted
             ? Ok(new ApiResponse(
                 StatusCodes.Status200OK,
@@ -256,102 +270,18 @@ public sealed class FilesController : ControllerBase
                 "File was not found."));
     }
 
-    private static bool IsMultipartRequest(HttpRequest request)
+    private bool RequestETagMatches(string eTag)
     {
-        return request.HasFormContentType
-            && request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
-    }
+        var ifNoneMatch = Request.Headers.IfNoneMatch.ToString();
 
-    private static string GetMultipartBoundary(string contentType)
-    {
-        var mediaType = MediaTypeHeaderValue.Parse(contentType);
-        var boundary = HeaderUtilities.RemoveQuotes(mediaType.Boundary).Value;
-
-        if (string.IsNullOrWhiteSpace(boundary))
+        if (string.IsNullOrWhiteSpace(ifNoneMatch))
         {
-            throw new InvalidOperationException("Multipart boundary is missing.");
+            return false;
         }
 
-        return boundary;
-    }
-
-    private static bool IsFormField(ContentDispositionHeaderValue contentDisposition)
-    {
-        return contentDisposition.IsFormDisposition()
-            && string.IsNullOrEmpty(contentDisposition.FileName.Value)
-            && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
-    }
-
-    private static bool IsFileField(ContentDispositionHeaderValue contentDisposition)
-    {
-        return contentDisposition.IsFileDisposition()
-            && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
-                || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
-    }
-
-    private static async Task ReadFormFieldAsync(
-        MultipartSection section,
-        ContentDispositionHeaderValue contentDisposition,
-        List<string> tags,
-        CancellationToken cancellationToken)
-    {
-        var fieldName = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value;
-
-        if (string.IsNullOrWhiteSpace(fieldName))
-        {
-            return;
-        }
-
-        using var reader = new StreamReader(
-            section.Body,
-            Encoding.UTF8,
-            detectEncodingFromByteOrderMarks: true,
-            bufferSize: 1024,
-            leaveOpen: true);
-
-        var value = await reader.ReadToEndAsync(cancellationToken);
-
-        if (fieldName.Equals("tags", StringComparison.OrdinalIgnoreCase)
-            || fieldName.Equals("tag", StringComparison.OrdinalIgnoreCase))
-        {
-            tags.AddRange(ParseTags(value));
-        }
-    }
-
-    private string GetCurrentUserId()
-    {
-        return User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? throw new InvalidOperationException("User id claim is missing.");
-    }
-
-    private static IReadOnlyCollection<string> ParseTags(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return [];
-        }
-
-        return value
+        return ifNoneMatch
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(tag => !string.IsNullOrWhiteSpace(tag))
-            .ToArray();
+            .Any(value => value == "*" || value.Equals(eTag, StringComparison.Ordinal));
     }
 
-    private static string GetSubmittedFileName(ContentDispositionHeaderValue contentDisposition)
-    {
-        var fileName = HeaderUtilities.RemoveQuotes(contentDisposition.FileNameStar).Value;
-
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            fileName = HeaderUtilities.RemoveQuotes(contentDisposition.FileName).Value;
-        }
-
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            throw new InvalidOperationException("Uploaded file name is missing.");
-        }
-
-        return Path.GetFileName(fileName.Replace('\\', '/'));
-    }
 }

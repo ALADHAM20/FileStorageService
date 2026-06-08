@@ -2,13 +2,21 @@ import { HttpClient, HttpEvent, HttpParams, HttpResponse } from '@angular/common
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, FileSearchFilters, PagedResponse, StoredFile } from '../models/file.models';
+import {
+  ApiResponse,
+  CreateUploadSessionRequest,
+  FileSearchFilters,
+  PagedResponse,
+  StoredFile,
+  UploadSession
+} from '../models/file.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FileApiService {
   private readonly filesUrl = `${environment.apiBaseUrl}/api/files`;
+  private readonly uploadSessionsUrl = `${environment.apiBaseUrl}/api/upload-sessions`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -53,6 +61,31 @@ export class FileApiService {
 
   hardDeleteFile(id: string): Observable<ApiResponse> {
     return this.http.delete<ApiResponse>(`${this.filesUrl}/${id}/hard`);
+  }
+
+  createUploadSession(request: CreateUploadSessionRequest): Observable<UploadSession> {
+    return this.http.post<UploadSession>(this.uploadSessionsUrl, request);
+  }
+
+  appendUploadChunk(
+    sessionId: string,
+    chunk: Blob,
+    uploadOffset: number
+  ): Observable<UploadSession> {
+    return this.http.put<UploadSession>(
+      `${this.uploadSessionsUrl}/${sessionId}/chunks`,
+      chunk,
+      {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Upload-Offset': String(uploadOffset)
+        }
+      }
+    );
+  }
+
+  completeUploadSession(sessionId: string): Observable<StoredFile> {
+    return this.http.post<StoredFile>(`${this.uploadSessionsUrl}/${sessionId}/complete`, null);
   }
 
   private createSearchParams(filters: FileSearchFilters): HttpParams {

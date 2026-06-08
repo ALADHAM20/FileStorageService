@@ -2,6 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using FileStorageService.Api.Auth;
+using FileStorageService.Api.Requests;
+using FileStorageService.Api.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -72,7 +74,3 @@ public sealed class AuthController : ControllerBase
             || role.Equals("admin", StringComparison.OrdinalIgnoreCase);
     }
 }
-
-public sealed record MockTokenRequest(string UserId, string Role);
-
-public sealed record MockTokenResponse(string AccessToken);

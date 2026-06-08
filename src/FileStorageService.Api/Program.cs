@@ -2,8 +2,10 @@ using System.Security.Claims;
 using FileStorageService.Application;
 using FileStorageService.Api.Auth;
 using FileStorageService.Api.ErrorHandling;
+using FileStorageService.Api.Extensions;
 using FileStorageService.Api.Middleware;
 using FileStorageService.Api.Options;
+using FileStorageService.Api.Services;
 using FileStorageService.Api.Swagger;
 using FileStorageService.Infrastructure;
 using Serilog;
@@ -20,6 +22,11 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IAuditRequestFactory, AuditRequestFactory>();
+builder.Services.AddScoped<IAuditLogWriter, AuditLogWriter>();
+builder.Services.AddScoped<MultipartUploadRequestReader>();
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
 builder.Services.AddSwaggerGen(options =>
 {
@@ -88,5 +95,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+await app.ApplyDatabaseMigrationsIfEnabledAsync();
 
 app.Run();

@@ -12,6 +12,10 @@ public sealed class FileStorageDbContext : Microsoft.EntityFrameworkCore.DbConte
 
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
 
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    public DbSet<UploadSession> UploadSessions => Set<UploadSession>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FileStorageDbContext).Assembly);

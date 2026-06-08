@@ -17,6 +17,7 @@
       (dragleave)="onDragLeave()"
       (drop)="onDrop($event)"
     >
+      <div class="drop-symbol">FILE</div>
       <p class="drop-title">Drag and drop a file</p>
       <p class="drop-subtitle">or use the file picker below</p>
       <input type="file" accept=".pdf,image/png,image/jpeg" (change)="onFileInputChanged($event)" />
@@ -26,7 +27,7 @@
       <div class="selected-file">
         <div>
           <strong>{{ selectedFile.name }}</strong>
-          <span>{{ selectedFile.size }} bytes</span>
+          <span>{{ selectedFile.size | number }} bytes selected</span>
         </div>
         <button type="button" class="secondary-button" (click)="clearSelection()" [disabled]="isUploading">Remove</button>
       </div>
@@ -37,11 +38,47 @@
       <input type="text" formControlName="tags" placeholder="invoice, finance, personal" />
     </label>
 
+    <div class="mode-group" role="radiogroup" aria-label="Upload method">
+      <label class="mode-option">
+        <input type="radio" formControlName="uploadMode" value="standard" />
+        <span>
+          <strong>Standard</strong>
+          <small>Single request</small>
+        </span>
+      </label>
+
+      <label class="mode-option">
+        <input type="radio" formControlName="uploadMode" value="resumable" />
+        <span>
+          <strong>Resumable</strong>
+          <small>Chunked upload</small>
+        </span>
+      </label>
+    </div>
+
+    @if (form.controls.uploadMode.value === 'resumable') {
+      <label>
+        Chunk size
+        <select formControlName="chunkSizeKb">
+          <option [ngValue]="256">256 KB</option>
+          <option [ngValue]="512">512 KB</option>
+          <option [ngValue]="1024">1 MB</option>
+          <option [ngValue]="2048">2 MB</option>
+        </select>
+      </label>
+    }
+
     @if (isUploading || uploadProgress > 0) {
+      <div class="progress-meta">
+        <span>Upload progress</span>
+        <strong>{{ uploadProgress }}%</strong>
+      </div>
       <div class="progress-shell" aria-label="Upload progress">
         <div class="progress-bar" [style.width.%]="uploadProgress"></div>
       </div>
-      <p class="progress-text">{{ uploadProgress }}% uploaded</p>
+      @if (uploadStatus) {
+        <p class="progress-status">{{ uploadStatus }}</p>
+      }
     }
 
     <div class="button-row">

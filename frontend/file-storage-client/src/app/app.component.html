@@ -8,11 +8,15 @@
     <a routerLink="/login" routerLinkActive="active">Login</a>
     <a routerLink="/storage/files" routerLinkActive="active">Files</a>
     <a routerLink="/storage/upload" routerLinkActive="active">Upload</a>
+    @if (authService.role === 'admin') {
+      <a routerLink="/storage/audit-logs" routerLinkActive="active">Audit</a>
+    }
   </nav>
 
   <div class="session">
     @if (authService.isLoggedIn) {
-      <span>{{ authService.userId }} / {{ authService.role }}</span>
+      <span class="session-user">{{ authService.userId }}</span>
+      <span class="session-role">{{ authService.role }}</span>
       <button type="button" (click)="logout()">Logout</button>
     } @else {
       <span>Not signed in</span>

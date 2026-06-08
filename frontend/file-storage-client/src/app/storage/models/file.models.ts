@@ -33,3 +33,23 @@ export interface ApiResponse {
   statusCode: number;
   message: string;
 }
+
+export interface CreateUploadSessionRequest {
+  originalName: string;
+  contentType: string;
+  totalSizeBytes: number;
+  tags: string[];
+}
+
+export interface UploadSession {
+  id: string;
+  originalName: string;
+  contentType: string;
+  totalSizeBytes: number;
+  uploadedBytes: number;
+  tags: string[];
+  status: string;
+  createdAtUtc: string;
+  expiresAtUtc: string;
+  finalFileId: string | null;
+}

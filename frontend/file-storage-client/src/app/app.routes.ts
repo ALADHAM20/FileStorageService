@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { LoginComponent } from './core/auth/login.component';
+import { AuditLogComponent } from './storage/pages/audit-log/audit-log.component';
 import { FileListComponent } from './storage/pages/file-list/file-list.component';
 import { FilePreviewComponent } from './storage/pages/file-preview/file-preview.component';
 import { FileUploadComponent } from './storage/pages/file-upload/file-upload.component';
@@ -19,6 +21,11 @@ export const routes: Routes = [
     path: 'storage/upload',
     component: FileUploadComponent,
     canActivate: [authGuard]
+  },
+  {
+    path: 'storage/audit-logs',
+    component: AuditLogComponent,
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'storage/files/:id/preview',
