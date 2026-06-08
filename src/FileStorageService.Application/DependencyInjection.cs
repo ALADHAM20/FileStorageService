@@ -14,6 +14,7 @@ public static class DependencyInjection
     {
         services.Configure<FileQueryOptions>(configuration.GetSection(FileQueryOptions.SectionName));
         services.Configure<FilePreviewOptions>(configuration.GetSection(FilePreviewOptions.SectionName));
+        services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IFileDeleteService, FileDeleteService>();
         services.AddScoped<IFileDownloadService, FileDownloadService>();
         services.AddScoped<IFilePreviewService, FilePreviewService>();

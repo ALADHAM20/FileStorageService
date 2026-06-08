@@ -5,6 +5,7 @@ using FileStorageService.Application.Interfaces;
 using FileStorageService.Api.Filters;
 using FileStorageService.Api.Options;
 using FileStorageService.Api.Responses;
+using FileStorageService.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -21,6 +22,7 @@ namespace FileStorageService.Api.Controllers;
 [Route("api/files")]
 public sealed class FilesController : ControllerBase
 {
+    private readonly IAuditLogService _auditLogService;
     private readonly IFileDeleteService _fileDeleteService;
     private readonly IFileDownloadService _fileDownloadService;
     private readonly IFilePreviewService _filePreviewService;
@@ -29,6 +31,7 @@ public sealed class FilesController : ControllerBase
     private readonly UploadOptions _uploadOptions;
 
     public FilesController(
+        IAuditLogService auditLogService,
         IFileDeleteService fileDeleteService,
         IFileDownloadService fileDownloadService,
         IFilePreviewService filePreviewService,
@@ -36,6 +39,7 @@ public sealed class FilesController : ControllerBase
         IFileUploadService fileUploadService,
         IOptions<UploadOptions> uploadOptions)
     {
+        _auditLogService = auditLogService;
         _fileDeleteService = fileDeleteService;
         _fileDownloadService = fileDownloadService;
         _filePreviewService = filePreviewService;
@@ -148,6 +152,11 @@ public sealed class FilesController : ControllerBase
                 GetCurrentUserId());
 
             var response = await _fileUploadService.UploadAsync(uploadRequest, cancellationToken);
+            await CreateAuditLogAsync(
+                response.Id,
+                AuditAction.Upload,
+                $"Uploaded file '{response.OriginalName}'.",
+                cancellationToken);
 
             return Created($"/api/files/{response.Id}", response);
         }
@@ -181,6 +190,12 @@ public sealed class FilesController : ControllerBase
             return NotFound();
         }
 
+        await CreateAuditLogAsync(
+            id,
+            AuditAction.Download,
+            $"Downloaded file '{response.OriginalName}'.",
+            cancellationToken);
+
         return new FileStreamResult(response.Content, response.ContentType)
         {
             FileDownloadName = response.OriginalName,
@@ -206,6 +221,12 @@ public sealed class FilesController : ControllerBase
             return NotFound();
         }
 
+        await CreateAuditLogAsync(
+            id,
+            AuditAction.Preview,
+            "Previewed file content.",
+            cancellationToken);
+
         return new FileStreamResult(response.Content, response.ContentType)
         {
             EnableRangeProcessing = true
@@ -223,6 +244,15 @@ public sealed class FilesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var deleted = await _fileDeleteService.SoftDeleteAsync(id, cancellationToken);
+
+        if (deleted)
+        {
+            await CreateAuditLogAsync(
+                id,
+                AuditAction.SoftDelete,
+                "Soft deleted file.",
+                cancellationToken);
+        }
 
         return deleted
             ? Ok(new ApiResponse(
@@ -246,6 +276,15 @@ public sealed class FilesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var deleted = await _fileDeleteService.HardDeleteAsync(id, cancellationToken);
+
+        if (deleted)
+        {
+            await CreateAuditLogAsync(
+                id,
+                AuditAction.HardDelete,
+                "Permanently deleted file.",
+                cancellationToken);
+        }
 
         return deleted
             ? Ok(new ApiResponse(
@@ -323,6 +362,23 @@ public sealed class FilesController : ControllerBase
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue("sub")
             ?? throw new InvalidOperationException("User id claim is missing.");
+    }
+
+    private async Task CreateAuditLogAsync(
+        Guid? fileId,
+        AuditAction action,
+        string details,
+        CancellationToken cancellationToken)
+    {
+        var request = new CreateAuditLogRequest(
+            fileId,
+            action,
+            GetCurrentUserId(),
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            HttpContext.TraceIdentifier,
+            details);
+
+        await _auditLogService.CreateAsync(request, cancellationToken);
     }
 
     private static IReadOnlyCollection<string> ParseTags(string? value)

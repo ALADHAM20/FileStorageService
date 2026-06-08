@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddDbContext<FileStorageDbContext>(options =>
             options.UseSqlServer(connectionString));
 
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IStoredFileRepository, StoredFileRepository>();
         services.AddSingleton(new LocalFileStorageOptions(storageRootPath));
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
