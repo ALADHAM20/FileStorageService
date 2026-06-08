@@ -79,7 +79,8 @@ label {
   gap: 8px;
 }
 
-input {
+input,
+select {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   color: #172033;
@@ -110,6 +111,40 @@ input[type='file'] {
   margin-top: 4px;
 }
 
+.mode-group {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
+.mode-option {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+}
+
+.mode-option:has(input:checked) {
+  background: #edf4ff;
+  border-color: #2563eb;
+}
+
+.mode-option input {
+  min-height: auto;
+  width: auto;
+}
+
+.mode-option small {
+  color: #64748b;
+  display: block;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 .progress-shell {
   background: #e2e8f0;
   border-radius: 999px;
@@ -121,6 +156,12 @@ input[type='file'] {
   background: #2563eb;
   height: 100%;
   transition: width 160ms ease;
+}
+
+.progress-status {
+  color: #334155;
+  font-size: 0.9rem;
+  margin: -8px 0 0;
 }
 
 button,
@@ -169,5 +210,9 @@ button:disabled {
   .selected-file {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .mode-group {
+    grid-template-columns: 1fr;
   }
 }

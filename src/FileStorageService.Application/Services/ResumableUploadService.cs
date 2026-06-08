@@ -110,14 +110,17 @@ public sealed class ResumableUploadService : IResumableUploadService
 
         try
         {
-            await using var tempContent = await _resumableUploadStorageService.OpenReadAsync(
-                uploadSession.TempStoredKey,
-                cancellationToken);
             var completedAtUtc = DateTime.UtcNow;
-            storedContent = await _fileStorageService.SaveAsync(
-                tempContent,
-                completedAtUtc,
-                cancellationToken);
+            await using (var tempContent = await _resumableUploadStorageService.OpenReadAsync(
+                uploadSession.TempStoredKey,
+                cancellationToken))
+            {
+                storedContent = await _fileStorageService.SaveAsync(
+                    tempContent,
+                    completedAtUtc,
+                    cancellationToken);
+            }
+
             var storedFile = StoredFile.Create(
                 Guid.NewGuid(),
                 uploadSession.OriginalName,

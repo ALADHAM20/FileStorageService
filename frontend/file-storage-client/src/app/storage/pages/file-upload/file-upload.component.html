@@ -37,11 +37,44 @@
       <input type="text" formControlName="tags" placeholder="invoice, finance, personal" />
     </label>
 
+    <div class="mode-group" role="radiogroup" aria-label="Upload method">
+      <label class="mode-option">
+        <input type="radio" formControlName="uploadMode" value="standard" />
+        <span>
+          <strong>Standard</strong>
+          <small>Single request</small>
+        </span>
+      </label>
+
+      <label class="mode-option">
+        <input type="radio" formControlName="uploadMode" value="resumable" />
+        <span>
+          <strong>Resumable</strong>
+          <small>Chunked upload</small>
+        </span>
+      </label>
+    </div>
+
+    @if (form.controls.uploadMode.value === 'resumable') {
+      <label>
+        Chunk size
+        <select formControlName="chunkSizeKb">
+          <option [ngValue]="256">256 KB</option>
+          <option [ngValue]="512">512 KB</option>
+          <option [ngValue]="1024">1 MB</option>
+          <option [ngValue]="2048">2 MB</option>
+        </select>
+      </label>
+    }
+
     @if (isUploading || uploadProgress > 0) {
       <div class="progress-shell" aria-label="Upload progress">
         <div class="progress-bar" [style.width.%]="uploadProgress"></div>
       </div>
       <p class="progress-text">{{ uploadProgress }}% uploaded</p>
+      @if (uploadStatus) {
+        <p class="progress-status">{{ uploadStatus }}</p>
+      }
     }
 
     <div class="button-row">
