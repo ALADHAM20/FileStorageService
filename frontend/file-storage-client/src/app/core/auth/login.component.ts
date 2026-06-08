@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService, UserRole } from '../../core/services/auth.service';
+import { AuthService, UserRole } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -36,7 +36,7 @@ export class LoginComponent {
 
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
-        this.router.navigateByUrl('/files');
+        this.router.navigateByUrl('/storage/files');
       },
       error: () => {
         this.errorMessage = 'Could not create a token. Make sure the backend API is running.';

@@ -190,6 +190,18 @@ npm.cmd run build
 
 The frontend uses `src/environments/environment.ts` for the backend API base URL.
 
+Current frontend capabilities:
+
+- Create a mock user/admin token.
+- Store the token for API calls.
+- List stored files.
+- Filter by name, tag, and content type.
+- Upload PDF, PNG, and JPG files.
+- Download stored files.
+- Preview images and PDFs.
+- Soft delete files.
+- Hard delete files when signed in as admin.
+
 Manual Swagger checklist:
 
 - Create a user token.

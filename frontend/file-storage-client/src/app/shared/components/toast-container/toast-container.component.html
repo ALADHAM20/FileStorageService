@@ -1,0 +1,8 @@
+<div class="toast-stack" aria-live="polite" aria-atomic="true">
+  @for (message of messages$ | async; track message.id) {
+    <div class="toast" [class.success]="message.type === 'success'" [class.error]="message.type === 'error'">
+      <span>{{ message.text }}</span>
+      <button type="button" (click)="dismiss(message.id)" aria-label="Dismiss notification">×</button>
+    </div>
+  }
+</div>
