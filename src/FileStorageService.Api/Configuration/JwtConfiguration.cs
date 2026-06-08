@@ -1,14 +1,15 @@
 using System.Text;
+using FileStorageService.Api.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace FileStorageService.Api.Auth;
+namespace FileStorageService.Api.Configuration;
 
-public static class AuthenticationExtensions
+public static class JwtConfiguration
 {
-    public static IServiceCollection AddJwtAuthentication(
+    public static IServiceCollection AddJwtAuthenticationConfiguration(
         this IServiceCollection services,
         IConfiguration configuration)
     {
