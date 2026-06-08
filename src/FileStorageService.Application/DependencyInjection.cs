@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IFilePreviewService, FilePreviewService>();
         services.AddScoped<IFileQueryService, FileQueryService>();
         services.AddScoped<IFileUploadService, FileUploadService>();
+        services.AddScoped<IResumableUploadService, ResumableUploadService>();
 
         return services;
     }

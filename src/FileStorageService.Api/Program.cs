@@ -4,6 +4,7 @@ using FileStorageService.Api.Auth;
 using FileStorageService.Api.ErrorHandling;
 using FileStorageService.Api.Middleware;
 using FileStorageService.Api.Options;
+using FileStorageService.Api.Services;
 using FileStorageService.Api.Swagger;
 using FileStorageService.Infrastructure;
 using Serilog;
@@ -20,6 +21,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
+builder.Services.AddScoped<MultipartUploadRequestReader>();
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
 builder.Services.AddSwaggerGen(options =>
 {
