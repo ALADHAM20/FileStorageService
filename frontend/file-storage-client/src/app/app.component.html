@@ -8,6 +8,9 @@
     <a routerLink="/login" routerLinkActive="active">Login</a>
     <a routerLink="/storage/files" routerLinkActive="active">Files</a>
     <a routerLink="/storage/upload" routerLinkActive="active">Upload</a>
+    @if (authService.role === 'admin') {
+      <a routerLink="/storage/audit-logs" routerLinkActive="active">Audit</a>
+    }
   </nav>
 
   <div class="session">
